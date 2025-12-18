@@ -24,7 +24,7 @@ The Spring PetClinic application manages the core operations of a veterinary cli
 ```bash
 # Clone the repository
 git clone https://github.com/liatrio-labs/spring-petclinic-enhanced
-cd spring-petclinic
+cd spring-petclinic-enhanced
 
 # Run with Maven
 ./mvnw spring-boot:run
@@ -46,6 +46,7 @@ Access the application at `http://localhost:8080`
 - **[Development Guide](docs/DEVELOPMENT.md)** - Setup, testing, and contribution guidelines
 - **[Architecture Guide](docs/ARCHITECTURE.md)** - System design and technical decisions
 - **[Testing Guide](docs/TESTING.md)** - Comprehensive testing strategies and patterns
+- **[E2E Tests (Playwright)](docs/TESTING.md#end-to-end-e2e-browser-tests-playwright)** - How to run browser-based end-to-end tests
 
 ## Development Standards
 
@@ -59,7 +60,7 @@ See the [Development Guide](docs/DEVELOPMENT.md) for detailed TDD requirements a
 
 ## Technology Stack
 
-- **Spring Boot 4.0.0** - Modern Java application framework
+- **Spring Boot (3.x)** - Modern Java application framework
 - **Spring MVC** - Web layer with Thymeleaf templating
 - **Spring Data JPA** - Data persistence layer
 - **Hibernate** - ORM implementation
