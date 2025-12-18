@@ -108,3 +108,7 @@ export SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/petclinic
 ## License
 
 This application is released under version 2.0 of the [Apache License](https://www.apache.org/licenses/LICENSE-2.0).
+
+## Origin
+
+This repository was initially created from https://github.com/spring-projects/spring-petclinic
