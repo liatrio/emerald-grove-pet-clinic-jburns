@@ -208,4 +208,23 @@ class PetControllerTests {
 
 	}
 
+	@Test
+	void testMissingOwnerReturnsFriendly404() throws Exception {
+		given(this.owners.findById(999)).willReturn(Optional.empty());
+
+		mockMvc.perform(get("/owners/{ownerId}/pets/new", 999))
+			.andExpect(status().isNotFound())
+			.andExpect(view().name("error"))
+			.andExpect(model().attribute("status", 404));
+	}
+
+	@Test
+	void testMissingPetEditReturnsFriendly404() throws Exception {
+		int missingPetId = 999;
+		mockMvc.perform(get("/owners/{ownerId}/pets/{petId}/edit", TEST_OWNER_ID, missingPetId))
+			.andExpect(status().isNotFound())
+			.andExpect(view().name("error"))
+			.andExpect(model().attribute("status", 404));
+	}
+
 }
