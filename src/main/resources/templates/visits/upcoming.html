@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+<html xmlns:th="https://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'owners')}">
+
+<body>
+
+  <h2 th:text="#{upcomingVisits}">Upcoming Visits</h2>
+  <p th:text="#{upcomingVisits.subtitle(${days})}">Showing visits for the next 7 days</p>
+
+  <div th:if="${#lists.isEmpty(visits)}" class="alert alert-info">
+    No upcoming visits found.
+  </div>
+
+  <table th:if="${not #lists.isEmpty(visits)}" class="table table-striped liatrio-table">
+    <thead>
+      <tr>
+        <th th:text="#{owner}">Owner</th>
+        <th th:text="#{pet}">Pet</th>
+        <th th:text="#{visitDate}">Date</th>
+        <th th:text="#{description}">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="entry : ${visits}">
+        <td>
+          <a th:href="@{/owners/__${entry.owner.id}__}"
+             th:text="${entry.owner.firstName + ' ' + entry.owner.lastName}">Owner Name</a>
+        </td>
+        <td th:text="${entry.pet.name}">Pet Name</td>
+        <td th:text="${#temporals.format(entry.visit.date, 'yyyy-MM-dd')}">Date</td>
+        <td th:text="${entry.visit.description}">Description</td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+
+</html>

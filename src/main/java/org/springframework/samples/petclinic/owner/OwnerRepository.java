@@ -15,11 +15,15 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repository class for <code>Owner</code> domain objects. All method names are compliant
@@ -58,5 +62,21 @@ public interface OwnerRepository extends JpaRepository<Owner, Integer> {
 	 * input for id)
 	 */
 	Optional<Owner> findById(Integer id);
+
+	/**
+	 * Retrieve all {@link Owner}s that have at least one {@link Visit} scheduled between
+	 * {@code start} (inclusive) and {@code end} (inclusive).
+	 * <p>
+	 * The returned owners will have their pets and visits fully loaded because both
+	 * associations are declared {@code EAGER}. The JPQL {@code JOIN} (without FETCH) is
+	 * used solely to filter; actual loading is handled by Hibernate's eager strategy.
+	 * {@code DISTINCT} prevents duplicate owner rows arising from the JOIN.
+	 * </p>
+	 * @param start the first date of the range (inclusive)
+	 * @param end the last date of the range (inclusive)
+	 * @return a list of matching {@link Owner}s, never {@literal null}
+	 */
+	@Query("SELECT DISTINCT o FROM Owner o JOIN o.pets p JOIN p.visits v WHERE v.date BETWEEN :start AND :end")
+	List<Owner> findOwnersWithUpcomingVisits(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
 }

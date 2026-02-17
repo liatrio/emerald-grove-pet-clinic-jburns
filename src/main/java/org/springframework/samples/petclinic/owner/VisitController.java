@@ -15,10 +15,14 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.validation.Valid;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -53,15 +58,26 @@ class VisitController {
 	}
 
 	/**
-	 * Called before each and every @RequestMapping annotated method. 2 goals: - Make sure
-	 * we always have fresh data - Since we do not use the session scope, make sure that
-	 * Pet object always has an id (Even though id is not part of the form fields)
-	 * @param petId
-	 * @return Pet
+	 * Called before each and every @RequestMapping annotated method that has
+	 * {@code {ownerId}} and {@code {petId}} path variables. Loads the owner and pet into
+	 * the model and creates a new transient {@link Visit} for form binding.
+	 * <p>
+	 * When the path variables are absent (e.g. for {@code /visits/upcoming}) the method
+	 * returns {@code null} so that no model attribute is contributed.
+	 * </p>
+	 * @param ownerId the owner id path variable, or {@code null} if not present
+	 * @param petId the pet id path variable, or {@code null} if not present
+	 * @param model the current model map
+	 * @return a new {@link Visit} bound to the pet, or {@code null} when path variables
+	 * are absent
 	 */
 	@ModelAttribute("visit")
-	public Visit loadPetWithVisit(@PathVariable("ownerId") int ownerId, @PathVariable("petId") int petId,
-			Map<String, Object> model) {
+	public Visit loadPetWithVisit(@PathVariable(value = "ownerId", required = false) Integer ownerId,
+			@PathVariable(value = "petId", required = false) Integer petId, Map<String, Object> model) {
+		if (ownerId == null || petId == null) {
+			return null;
+		}
+
 		Optional<Owner> optionalOwner = owners.findById(ownerId);
 		Owner owner = optionalOwner.orElseThrow(() -> new IllegalArgumentException(
 				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
@@ -99,6 +115,42 @@ class VisitController {
 		this.owners.save(owner);
 		redirectAttributes.addFlashAttribute("message", "Your visit has been booked");
 		return "redirect:/owners/{ownerId}";
+	}
+
+	/**
+	 * Displays all upcoming visits within the next {@code days} days.
+	 * <p>
+	 * Visits are fetched via a single repository query that filters on date range. The
+	 * result is then flattened into a list of {@link UpcomingVisitEntry} records and
+	 * additionally post-filtered in Java to exclude any visits outside the window that
+	 * may have been loaded eagerly on returned owners.
+	 * </p>
+	 * @param days number of days into the future to look (default 7)
+	 * @param model the Spring MVC model
+	 * @return the logical view name {@code visits/upcoming}
+	 */
+	@GetMapping("/visits/upcoming")
+	public String upcomingVisits(@RequestParam(defaultValue = "7") int days, Model model) {
+		LocalDate today = LocalDate.now();
+		LocalDate until = today.plusDays(days);
+
+		List<Owner> ownersWithVisits = owners.findOwnersWithUpcomingVisits(today, until);
+
+		List<UpcomingVisitEntry> entries = new ArrayList<>();
+		for (Owner owner : ownersWithVisits) {
+			for (Pet pet : owner.getPets()) {
+				for (Visit visit : pet.getVisits()) {
+					if (!visit.getDate().isBefore(today) && !visit.getDate().isAfter(until)) {
+						entries.add(new UpcomingVisitEntry(owner, pet, visit));
+					}
+				}
+			}
+		}
+		entries.sort(java.util.Comparator.comparing(e -> e.visit().getDate()));
+
+		model.addAttribute("visits", entries);
+		model.addAttribute("days", days);
+		return "visits/upcoming";
 	}
 
 }
