@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -226,6 +227,43 @@ class OwnerControllerTests {
 			.andExpect(model().attribute("owner",
 					hasProperty("pets", hasItem(hasProperty("visits", hasSize(greaterThan(0)))))))
 			.andExpect(view().name("owners/ownerDetails"));
+	}
+
+	@Test
+	void testExportOwnersCsv() throws Exception {
+		// given
+		Page<Owner> page = new PageImpl<>(List.of(george()));
+		when(this.owners.findByLastNameStartingWith(eq(""), any(Pageable.class))).thenReturn(page);
+
+		// when/then
+		mockMvc.perform(get("/owners.csv"))
+			.andExpect(status().isOk())
+			.andExpect(content().contentTypeCompatibleWith("text/csv"))
+			.andExpect(content().string(containsString("name,address,city,telephone")))
+			.andExpect(content().string(containsString("George Franklin")));
+	}
+
+	@Test
+	void testExportOwnersCsvFilteredByLastName() throws Exception {
+		Page<Owner> page = new PageImpl<>(List.of(george()));
+		when(this.owners.findByLastNameStartingWith(eq("Franklin"), any(Pageable.class))).thenReturn(page);
+
+		mockMvc.perform(get("/owners.csv").param("lastName", "Franklin"))
+			.andExpect(status().isOk())
+			.andExpect(content().contentTypeCompatibleWith("text/csv"))
+			.andExpect(content().string(containsString("George Franklin")));
+	}
+
+	@Test
+	void testExportOwnersCsvEmpty() throws Exception {
+		Page<Owner> emptyPage = new PageImpl<>(List.of());
+		when(this.owners.findByLastNameStartingWith(eq("Unknown"), any(Pageable.class))).thenReturn(emptyPage);
+
+		mockMvc.perform(get("/owners.csv").param("lastName", "Unknown"))
+			.andExpect(status().isOk())
+			.andExpect(content().contentTypeCompatibleWith("text/csv"))
+			.andExpect(content().string(containsString("name,address,city,telephone")))
+			.andExpect(content().string(not(containsString("George"))));
 	}
 
 	@Test

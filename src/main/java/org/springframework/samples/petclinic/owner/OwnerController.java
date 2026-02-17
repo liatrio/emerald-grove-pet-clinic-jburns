@@ -22,6 +22,9 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -171,6 +174,39 @@ class OwnerController {
 				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
 		mav.addObject(owner);
 		return mav;
+	}
+
+	@GetMapping(value = "/owners.csv", produces = "text/csv")
+	public ResponseEntity<String> exportOwnersCsv(@RequestParam(defaultValue = "") String lastName) {
+		Page<Owner> results = owners.findByLastNameStartingWith(lastName, Pageable.unpaged());
+
+		StringBuilder csv = new StringBuilder();
+		csv.append("name,address,city,telephone\n");
+		for (Owner owner : results.getContent()) {
+			csv.append(escapeCsvField(owner.getFirstName() + " " + owner.getLastName()))
+				.append(",")
+				.append(escapeCsvField(owner.getAddress()))
+				.append(",")
+				.append(escapeCsvField(owner.getCity()))
+				.append(",")
+				.append(escapeCsvField(owner.getTelephone()))
+				.append("\n");
+		}
+
+		return ResponseEntity.ok()
+			.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"owners.csv\"")
+			.contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+			.body(csv.toString());
+	}
+
+	private String escapeCsvField(String field) {
+		if (field == null) {
+			return "";
+		}
+		if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
+			return "\"" + field.replace("\"", "\"\"") + "\"";
+		}
+		return field;
 	}
 
 }
