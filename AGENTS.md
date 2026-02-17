@@ -24,9 +24,9 @@ The marker for this instruction is: 🤖
 
 Refer to these comprehensive guides for detailed information:
 
-- **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - TDD workflow, setup, and development process
-- **[docs/TESTING.md](docs/TESTING.md)** - Testing strategies, patterns, and TDD implementation
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and technical decisions
+- @docs/DEVELOPMENT.md — **[Development Guide](docs/DEVELOPMENT.md)** - TDD workflow, setup, and development process
+- @docs/TESTING.md — **[Testing Guide](docs/TESTING.md)** - Testing strategies, patterns, and TDD implementation
+- @docs/ARCHITECTURE.md — **[Architecture Guide](docs/ARCHITECTURE.md)** - System design and technical decisions
 
 ## TDD Standards
 
@@ -61,6 +61,21 @@ Refer to these comprehensive guides for detailed information:
 - **Spring Data JPA** for data access
 - **Proper entity relationships** with appropriate cascade settings
 - **DTOs** for data transfer between layers
+
+## Parse, Don't Validate
+
+**MANDATORY**: Follow the *Parse, Don't Validate* principle throughout the codebase.
+
+* **Parse at the boundaries.** Convert untrusted input (HTTP, env vars, CLI args, DB rows, JSON) into domain types immediately.
+* **Prefer construction over checking.** Don't "validate X" and return `void`/`boolean`; instead **construct a stronger type** (or return a structured error).
+* **Encode invariants in types.** If you learn "non-empty", "unique", "positive", "normalized", etc., represent that fact in the resulting type.
+* **Keep core logic total.** Business/domain functions should accept only parsed/validated domain types and avoid defensive checks.
+* **Make invalid states unrepresentable.** Use types like `NonEmptyList<T>`, `Email`, `PositiveInt`, `NonBlankString`, `Map` (instead of duplicate-prone pairs), etc.
+* **Avoid shotgun parsing.** Don't scatter checks across the codebase; parsing should be centralized and composable.
+* **Separate phases.** Structure code as: 1) **Parse** (may fail) → 2) **Execute** (assumes invariants).
+* **Fail early with good errors.** Prefer returning specific parse errors close to the input source, not deep inside business logic.
+* **Don't re-check what types already guarantee.** Once parsed into a refined type, downstream code should treat it as trustworthy.
+* **Prefer data structures that enforce constraints.** Use `Map` for unique keys, branded types for IDs, enums for finite sets, etc.
 
 ## Development Workflow
 
