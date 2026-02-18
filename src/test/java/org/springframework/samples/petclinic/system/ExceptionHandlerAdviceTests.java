@@ -58,6 +58,23 @@ class ExceptionHandlerAdviceTests {
 			.doesNotContain("Internal entity details that should not be exposed");
 	}
 
+	@Test
+	void handleResourceNotFoundExceptionReturnsNotFoundStatus() throws Exception {
+		mockMvc.perform(get("/test/resource-not-found")).andExpect(status().isNotFound());
+	}
+
+	@Test
+	void handleResourceNotFoundExceptionDoesNotExposeExceptionMessage() throws Exception {
+		String responseBody = mockMvc.perform(get("/test/resource-not-found"))
+			.andExpect(status().isNotFound())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		org.assertj.core.api.Assertions.assertThat(responseBody)
+			.doesNotContain("Resource details that should not be exposed");
+	}
+
 	@RestController
 	@RequestMapping("/test")
 	static class TestController {
@@ -65,6 +82,11 @@ class ExceptionHandlerAdviceTests {
 		@GetMapping("/illegal-argument")
 		public String throwIllegalArgument() {
 			throw new IllegalArgumentException("Internal entity details that should not be exposed");
+		}
+
+		@GetMapping("/resource-not-found")
+		public String throwResourceNotFound() {
+			throw new ResourceNotFoundException("Resource details that should not be exposed");
 		}
 
 	}

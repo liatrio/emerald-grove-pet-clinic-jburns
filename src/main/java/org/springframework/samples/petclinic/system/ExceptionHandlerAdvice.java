@@ -28,9 +28,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ControllerAdvice
 class ExceptionHandlerAdvice {
 
-	@ExceptionHandler(IllegalArgumentException.class)
+	@ExceptionHandler({ IllegalArgumentException.class, ResourceNotFoundException.class })
 	@ResponseStatus(HttpStatus.NOT_FOUND)
-	public String handleIllegalArgument(IllegalArgumentException ex, Model model) {
+	public String handleNotFound(RuntimeException ex, Model model) {
 		model.addAttribute("status", HttpStatus.NOT_FOUND.value());
 		return "error";
 	}

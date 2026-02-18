@@ -8,7 +8,7 @@ test.describe('Friendly 404 pages', () => {
     expect(response?.status()).toBe(404);
 
     // Verify friendly heading is shown (not a stack trace)
-    await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2 })).toContainText(/something happened/i);
 
     // Verify "Find Owners" link is present in the error card (in addition to nav)
     await expect(page.locator('.liatrio-error-card').getByRole('link', { name: /Find Owners/i })).toBeVisible();
