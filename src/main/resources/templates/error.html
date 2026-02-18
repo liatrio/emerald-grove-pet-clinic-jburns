@@ -15,7 +15,11 @@
         <span th:case="*" th:text="#{error.general}">An unexpected error occurred.</span>
       </p>
 
-      <p class="liatrio-muted" th:text="${message}">Exception message</p>
+      <p class="liatrio-muted" th:if="${message}" th:text="${message}">Exception message</p>
+
+      <p>
+        <a th:href="@{/owners/find}" th:text="#{findOwners}">Find Owners</a>
+      </p>
     </div>
   </section>
 </body>
