@@ -39,6 +39,12 @@ class UpcomingVisitsController {
 
 	@GetMapping("/visits/upcoming")
 	public String upcomingVisits(@RequestParam(defaultValue = "7") int days, Model model) {
+		if (days < 1) {
+			days = 7;
+		}
+		else if (days > 365) {
+			days = 365;
+		}
 		LocalDate today = LocalDate.now();
 		List<Visit> rawVisits = this.visits.findUpcomingWithPetAndOwner(today, today.plusDays(days));
 		List<UpcomingVisitView> viewList = rawVisits.stream()

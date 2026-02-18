@@ -82,6 +82,11 @@ public class Pet extends NamedEntity {
 		return this.owner;
 	}
 
+	/**
+	 * Sets the owner reference for in-memory access and testing only. This field is
+	 * read-only at the JPA level (insertable = false, updatable = false); changes will
+	 * not be persisted to the database.
+	 */
 	public void setOwner(Owner owner) {
 		this.owner = owner;
 	}

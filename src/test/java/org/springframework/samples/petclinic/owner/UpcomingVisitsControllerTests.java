@@ -27,6 +27,8 @@ import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -100,7 +102,36 @@ class UpcomingVisitsControllerTests {
 		this.mockMvc.perform(get("/visits/upcoming"))
 			.andExpect(status().isOk())
 			.andExpect(view().name("visits/upcomingVisits"))
-			.andExpect(model().attributeExists("visits"));
+			.andExpect(model().attribute("visits", hasSize(1)))
+			.andDo(result -> {
+				@SuppressWarnings("unchecked")
+				List<UpcomingVisitView> visits = (List<UpcomingVisitView>) result.getModelAndView()
+					.getModel()
+					.get("visits");
+				assertThat(visits).hasSize(1);
+				UpcomingVisitView view = visits.get(0);
+				assertThat(view.petName()).isEqualTo("Leo");
+				assertThat(view.ownerFirstName()).isEqualTo("George");
+				assertThat(view.ownerLastName()).isEqualTo("Franklin");
+			});
+	}
+
+	@Test
+	void testUpcomingVisitsNegativeDaysClampsToDefault() throws Exception {
+		given(this.visitRepository.findUpcomingWithPetAndOwner(any(), any())).willReturn(List.of());
+
+		this.mockMvc.perform(get("/visits/upcoming").param("days", "-5"))
+			.andExpect(status().isOk())
+			.andExpect(model().attribute("days", 7));
+	}
+
+	@Test
+	void testUpcomingVisitsExcessiveDaysClampedTo365() throws Exception {
+		given(this.visitRepository.findUpcomingWithPetAndOwner(any(), any())).willReturn(List.of());
+
+		this.mockMvc.perform(get("/visits/upcoming").param("days", "1000"))
+			.andExpect(status().isOk())
+			.andExpect(model().attribute("days", 365));
 	}
 
 }

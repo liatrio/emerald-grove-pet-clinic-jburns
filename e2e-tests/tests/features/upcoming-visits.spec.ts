@@ -38,6 +38,6 @@ test.describe('Upcoming Visits page', () => {
   test('respects days query parameter', async ({ page }) => {
     const response = await page.goto('/visits/upcoming?days=14');
     expect(response?.status()).toBe(200);
-    await expect(page.getByText(/14/)).toBeVisible();
+    await expect(page.locator('.liatrio-muted')).toContainText('14');
   });
 });
