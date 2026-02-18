@@ -203,7 +203,11 @@ class OwnerController {
 		if (value == null) {
 			return "";
 		}
-		return value.replace("\r", "").replace("\n", " ");
+		String sanitized = value.replace("\r", "").replace("\n", " ");
+		if (!sanitized.isEmpty() && "=+-@\t".indexOf(sanitized.charAt(0)) >= 0) {
+			sanitized = "'" + sanitized;
+		}
+		return sanitized;
 	}
 
 }

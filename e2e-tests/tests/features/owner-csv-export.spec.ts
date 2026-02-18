@@ -1,57 +1,51 @@
 import { test, expect } from '@fixtures/base-test';
-import * as path from 'path';
-import * as fs from 'fs';
 
 test.describe('Owner CSV Export', () => {
   test('downloads CSV with correct headers and data', async ({ page }) => {
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.goto('/owners.csv?lastName=Davis'),
-    ]);
+    const response = await page.request.get('/owners.csv?lastName=Davis');
 
-    expect(download.suggestedFilename()).toBe('owners.csv');
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('text/csv');
+    expect(response.headers()['content-disposition']).toContain('owners.csv');
 
-    const downloadPath = path.join(__dirname, '../../test-results', 'owners-test.csv');
-    await download.saveAs(downloadPath);
-
-    let content = fs.readFileSync(downloadPath, 'utf8');
-    // Strip BOM if present
+    let content = await response.text();
+    // Strip UTF-8 BOM if present
     if (content.charCodeAt(0) === 0xfeff) {
       content = content.slice(1);
     }
 
     const lines = content.trim().split(/\r?\n/);
-    // Header row present
     expect(lines[0]).toContain('Name');
+    expect(lines[0]).toContain('Address');
+    expect(lines[0]).toContain('City');
     expect(lines[0]).toContain('Telephone');
-    // Data rows present
     expect(lines.length).toBeGreaterThan(1);
     expect(content).toContain('Davis');
-
-    fs.unlinkSync(downloadPath);
   });
 
-  test('returns header row only when no owners match', async ({ page }) => {
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.goto('/owners.csv?lastName=ZZZNoSuchOwner'),
-    ]);
+  test('csv export respects lastName filter', async ({ page }) => {
+    const response = await page.request.get('/owners.csv?lastName=Franklin');
 
-    const downloadPath = path.join(__dirname, '../../test-results', 'owners-empty-test.csv');
-    await download.saveAs(downloadPath);
+    expect(response.status()).toBe(200);
+    let content = await response.text();
+    if (content.charCodeAt(0) === 0xfeff) {
+      content = content.slice(1);
+    }
+    expect(content).toContain('Franklin');
+  });
 
-    let content = fs.readFileSync(downloadPath, 'utf8');
+  test('csv export with no results returns header only', async ({ page }) => {
+    const response = await page.request.get('/owners.csv?lastName=ZZZNoSuchOwner');
+
+    expect(response.status()).toBe(200);
+    let content = await response.text();
     if (content.charCodeAt(0) === 0xfeff) {
       content = content.slice(1);
     }
 
-    const lines = content
-      .trim()
-      .split(/\r?\n/)
-      .filter((l) => l.trim().length > 0);
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toBe('Name,Address,City,Telephone');
-
-    fs.unlinkSync(downloadPath);
+    const lines = content.trim().split(/\r?\n/);
+    expect(lines[0]).toContain('Name');
+    // Only header row, no data rows
+    expect(lines.length).toBe(1);
   });
 });
