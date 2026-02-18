@@ -248,4 +248,57 @@ class OwnerControllerTests {
 			.andExpect(flash().attributeExists("error"));
 	}
 
+	@Test
+	void testExportOwnersCsvReturnsOk() throws Exception {
+		given(this.owners.findByLastNameStartingWith(anyString(), any(Pageable.class)))
+			.willReturn(new PageImpl<>(List.of(george())));
+
+		mockMvc.perform(get("/owners.csv")).andExpect(status().isOk());
+	}
+
+	@Test
+	void testExportOwnersCsvContentType() throws Exception {
+		given(this.owners.findByLastNameStartingWith(anyString(), any(Pageable.class)))
+			.willReturn(new PageImpl<>(List.of(george())));
+
+		mockMvc.perform(get("/owners.csv"))
+			.andExpect(status().isOk())
+			.andExpect(content().contentTypeCompatibleWith("text/csv"));
+	}
+
+	@Test
+	void testExportOwnersCsvContainsHeaderRow() throws Exception {
+		given(this.owners.findByLastNameStartingWith(anyString(), any(Pageable.class)))
+			.willReturn(new PageImpl<>(List.of(george())));
+
+		mockMvc.perform(get("/owners.csv"))
+			.andExpect(status().isOk())
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("Name,Address,City,Telephone")));
+	}
+
+	@Test
+	void testExportOwnersCsvFiltersByLastName() throws Exception {
+		given(this.owners.findByLastNameStartingWith(eq("Franklin"), any(Pageable.class)))
+			.willReturn(new PageImpl<>(List.of(george())));
+
+		mockMvc.perform(get("/owners.csv").param("lastName", "Franklin"))
+			.andExpect(status().isOk())
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("Franklin")));
+	}
+
+	@Test
+	void testExportOwnersCsvEmptyResultReturnsHeaderOnly() throws Exception {
+		given(this.owners.findByLastNameStartingWith(eq("Unknown"), any(Pageable.class)))
+			.willReturn(new PageImpl<>(List.of()));
+
+		String body = mockMvc.perform(get("/owners.csv").param("lastName", "Unknown"))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		org.assertj.core.api.Assertions.assertThat(body).contains("Name,Address,City,Telephone");
+		org.assertj.core.api.Assertions.assertThat(body.trim().lines().filter(l -> !l.isBlank()).count()).isEqualTo(1L);
+	}
+
 }
