@@ -15,13 +15,20 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -34,6 +41,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -171,6 +179,35 @@ class OwnerController {
 				"Owner not found with id: " + ownerId + ". Please ensure the ID is correct "));
 		mav.addObject(owner);
 		return mav;
+	}
+
+	@GetMapping("/owners.csv")
+	public void exportOwnersCsv(@RequestParam(defaultValue = "") String lastName, HttpServletResponse response)
+			throws IOException {
+		response.setContentType("text/csv; charset=UTF-8");
+		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"owners.csv\"");
+		response.getOutputStream().write(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF });
+		Page<Owner> results = this.owners.findByLastNameStartingWith(lastName, Pageable.unpaged());
+		try (CSVPrinter printer = new CSVPrinter(
+				new PrintWriter(new OutputStreamWriter(response.getOutputStream(), StandardCharsets.UTF_8)),
+				CSVFormat.DEFAULT.builder().setHeader("Name", "Address", "City", "Telephone").build())) {
+			for (Owner owner : results) {
+				printer.printRecord(sanitizeForCsv(owner.getFirstName() + " " + owner.getLastName()),
+						sanitizeForCsv(owner.getAddress()), sanitizeForCsv(owner.getCity()),
+						sanitizeForCsv(owner.getTelephone()));
+			}
+		}
+	}
+
+	private static String sanitizeForCsv(String value) {
+		if (value == null) {
+			return "";
+		}
+		String sanitized = value.replace("\r", "").replace("\n", " ");
+		if (!sanitized.isEmpty() && "=+-@\t".indexOf(sanitized.charAt(0)) >= 0) {
+			sanitized = "'" + sanitized;
+		}
+		return sanitized;
 	}
 
 }
